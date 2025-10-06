@@ -255,6 +255,41 @@
       </div>
     </section>
 
+    <!-- Ações Futuras -->
+<section id="sec-acoes-futuras" class="card">
+  <div class="section-header">
+    <h2>Ações Futuras</h2>
+    <button id="btnAddAcaoFutura" class="btn small">+ Adicionar ação futura</button>
+  </div>
+
+  <div id="listaAcoesFuturas" class="list"></div>
+
+  <template id="tplAcaoFutura">
+    <div class="list-item">
+      <div class="list-grid">
+        <label>Ação futura
+          <input type="text" class="acaoF-desc" placeholder="Descreva a ação futura" />
+        </label>
+        <label>Responsável
+          <input type="text" class="acaoF-resp" placeholder="Nome do responsável" />
+        </label>
+        <label>Prazo
+          <input type="date" class="acaoF-prazo" />
+        </label>
+        <label>Status
+          <select class="acaoF-status">
+            <option value="pendente" selected>Pendente</option>
+            <option value="concluida">Concluída</option>
+          </select>
+        </label>
+      </div>
+      <div class="list-actions">
+        <button class="btn ghost btnRemoverFutura">Remover</button>
+      </div>
+    </div>
+  </template>
+</section>
+
     <section id="onepage" class="onepage hidden" aria-hidden="true"></section>
     <footer class="footer">
       <small>Gerado por RCA Hub — use o botão "Imprimir/Salvar PDF" para gerar seu documento.</small>

@@ -3,7 +3,7 @@ function $(sel, root=document){ return root.querySelector(sel); }
 function $all(sel, root=document){ return Array.from(root.querySelectorAll(sel)); }
 
 // Persistência
-const STORAGE_KEY = 'rca_hub_v1';
+const STORAGE_KEY = 'rca_hub_v2';
 
 function collectData(){
   const data = {
@@ -38,7 +38,13 @@ function collectData(){
       cat: col.dataset.cat,
       contribuiu: col.querySelector('.contrib').checked,
       fatores: col.querySelector('textarea').value,
-    }))
+    })),
+    acoesFuturas: $all('#listaAcoesFuturas .list-item').map(item => ({
+    desc: item.querySelector('.acaoF-desc').value,
+    resp: item.querySelector('.acaoF-resp').value,
+    prazo: item.querySelector('.acaoF-prazo').value,
+    status: item.querySelector('.acaoF-status').value,
+})),
   };
   return data;
 }
@@ -77,6 +83,10 @@ function populateData(data){
       toggleBranchHighlight(f.cat, !!f.contribuiu);
     }
   }
+  if (Array.isArray(data.acoesFuturas)) {
+  $('#listaAcoesFuturas').innerHTML = '';
+  for (const a of data.acoesFuturas) { addAcaoFutura(a); }
+}
 }
 
 function save(){
@@ -110,6 +120,21 @@ function addAcao(prefill){
   document.getElementById('listaAcoes').appendChild(node);
 }
 
+function addAcaoFutura(prefill){
+  const tpl = document.getElementById('tplAcaoFutura');
+  const node = tpl.content.firstElementChild.cloneNode(true);
+
+  if (prefill){
+    node.querySelector('.acaoF-desc').value = prefill.desc || '';
+    node.querySelector('.acaoF-resp').value = prefill.resp || '';
+    node.querySelector('.acaoF-prazo').value = prefill.prazo || '';
+    if (prefill.status) node.querySelector('.acaoF-status').value = prefill.status;
+  }
+
+  node.querySelector('.btnRemoverFutura').addEventListener('click', () => node.remove());
+  document.getElementById('listaAcoesFuturas').appendChild(node);
+}
+
 // Causas / 5 porquês
 function addCausa(prefill){
   const tpl = document.getElementById('tplCausa');
@@ -126,9 +151,8 @@ function addCausa(prefill){
   document.getElementById('listaCausas').appendChild(node);
 }
 
-// Fishbone highlight
+// Fishbone highlight (na página principal)
 function toggleBranchHighlight(category, active){
-  // find a <g> with data-cat that matches the category text present
   const groups = $all('#fishbone g.branch');
   for(const g of groups){
     if(g.getAttribute('data-cat') === category){
@@ -138,56 +162,83 @@ function toggleBranchHighlight(category, active){
 }
 
 // Print
-function toPDF(){
-  window.print();
+function toPDF(){ window.print(); }
+
+// === OnePage: gerar SVG do Ishikawa com destaques ===
+function generateFishboneSVG(factors){
+  const cats = [
+    { key: "Método", x: 0, upper: true, label:"Método" },
+    { key: "Máquina", x: 140, upper: true, label:"Máquina" },
+    { key: "Mão de Obra", x: 280, upper: true, label:"Mão de Obra" },
+    { key: "Material", x: 0, upper: false, label:"Material" },
+    { key: "Medida", x: 140, upper: false, label:"Medida" },
+    { key: "Meio Ambiente", x: 280, upper: false, label:"Meio Ambiente" }
+  ];
+  const map = Object.fromEntries(factors.map(f => [f.cat, f]));
+  const branch = (c) => {
+    const active = !!map[c.key]?.contribuiu;
+    const color = active ? "#f59e0b" : "#94a3b8";
+    const y2 = c.upper ? 120 : 300;
+    const ty = c.upper ? 110 : 320;
+    const tx = c.key === "Mão de Obra" ? 90 : (c.key === "Meio Ambiente" ? 60 : 120);
+    return `
+      <g data-cat="${c.key}" class="branch${active ? " active":""}" transform="translate(${c.x},0)">
+        <line x1="250" y1="210" x2="150" y2="${y2}" stroke="${color}" stroke-width="${active?4:2.5}" />
+        <text x="${tx}" y="${ty}" fill="${active ? "#0f172a" : "#64748b"}" font-size="13">${c.label}</text>
+      </g>
+    `;
+  };
+  return `
+  <svg viewBox="0 0 1000 420" role="img" aria-label="Diagrama de espinha de peixe">
+    <line x1="80" y1="210" x2="900" y2="210" stroke="#94a3b8" stroke-width="3"/>
+    <polygon points="900,210 860,195 860,225" fill="#94a3b8"/>
+    ${cats.map(branch).join("")}
+    <text x="910" y="215" fill="#0f172a" font-weight="700" font-size="14">Problema</text>
+  </svg>`;
 }
 
-// Init
-window.addEventListener('DOMContentLoaded', () => {
-  // wire buttons
-  $('#btnAddAcao').addEventListener('click', () => addAcao());
-  $('#btnAddCausa').addEventListener('click', () => addCausa());
-  $('#btnSalvar').addEventListener('click', save);
-  $('#btnLimpar').addEventListener('click', clearAll);
-  $('#btnPDF').addEventListener('click', toPDF);
+function formatDateBR(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return iso; // se não for ISO, retorna como veio
+  return d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+}
 
-  // fishbone switches
-  $all('.contrib').forEach(chk => {
-    chk.addEventListener('change', (e) => {
-      toggleBranchHighlight(e.target.dataset.target, e.target.checked);
-    });
-  });
+function buildAcoesFuturasBlock(acoesFuturas = []){
+  const items = (acoesFuturas || []).filter(a => (a.desc||'').trim().length);
 
-  // preencher data se vazia
-  const dataInput = $('#data');
-  if(!dataInput.value){
-    const today = new Date();
-    dataInput.value = today.toISOString().slice(0,10);
-  }
+  const rows = items.length ? items.map((a, i) => {
+    const status = (a.status || 'pendente').toLowerCase();
+    const statusLabel = status === 'concluida' ? 'Concluída' : 'Pendente';
+    return `
+      <div class="op-row">
+        <div class="op-col main">
+          <div class="op-title">${i+1}. ${a.desc || '—'}</div>
+          <div class="op-meta">Resp.: <b>${a.resp || '—'}</b> • Prazo: <b>${formatDateBR(a.prazo)}</b></div>
+        </div>
+        <div class="op-col status">
+          <span class="status-chip ${status}">${statusLabel}</span>
+        </div>
+      </div>
+    `;
+  }).join('') : `<div class="op-empty">— Sem ações futuras cadastradas —</div>`;
+}
 
-  load(); // restore persisted data
-});
-
-
-// === OnePage builder & exporter ===
+// === OnePage builder (3 setores) & exporter ===
 function buildOnePage() {
   const data = collectData();
-
-  // compact helpers
   const safe = (v) => (v && String(v).trim()) ? v : '—';
 
-  // Take top 6 ações and causas for compact layout
-  const acoes = data.acoes.filter(a => a.desc?.trim()).slice(0, 6);
-  const causas = data.causas.filter(c => c.desc?.trim()).slice(0, 6);
+  const acoes = data.acoes.filter(a => a.desc?.trim());
+  const causas = data.causas.filter(c => c.desc?.trim());
+  const contribs = data.fishbone.filter(f => !!f.contribuiu);
+  const porquesDetalhados = causas.map((c, idx) => ({
+    idx: idx + 1, desc: c.desc, porques: [c.pq1, c.pq2, c.pq3, c.pq4, c.pq5].filter(Boolean)
+  }));
 
-  const chips = data.fishbone.map(f => {
-    const on = !!f.contribuiu;
-    return `<span class="op-chip ${on ? 'on' : ''}">${f.cat}${on ? ' • contribuiu' : ''}</span>`;
-  }).join('');
-
-  // 5 porquês (mostrar da primeira hipótese, se houver)
-  const pq = causas[0] || {};
-  const porques = [pq.pq1, pq.pq2, pq.pq3, pq.pq4, pq.pq5].filter(Boolean);
+  const fishSVG = generateFishboneSVG(data.fishbone);
+  const comentariosContrib = contribs.map(f => `<div><b>${f.cat}:</b> ${safe(f.fatores)}</div>`).join('') || '—';
+  const chips = data.fishbone.map(f => `<span class="op-chip ${f.contribuiu ? 'on' : ''}">${f.cat}${f.contribuiu ? ' • contribuiu' : ''}</span>`).join('');
 
   const el = document.getElementById('onepage');
   el.innerHTML = `
@@ -205,7 +256,8 @@ function buildOnePage() {
       <div class="op-small">Gerado por RCA Hub — ${new Date().toLocaleString()}</div>
     </div>
 
-    <div class="op-grid">
+    <div class="op-three">
+      <!-- Setor 1: Descrição & Ações imediatas -->
       <div class="op-card">
         <h3>Descrição & Contexto</h3>
         <div class="op-list">
@@ -215,35 +267,52 @@ function buildOnePage() {
           <div><b>Reincidente:</b> ${data.problema.reincidente === 'sim' ? 'Sim' : 'Não'}</div>
           <div><b>Relatórios anteriores:</b> ${data.problema.relatorios === 'sim' ? 'Sim' : 'Não'}</div>
         </div>
-      </div>
-
-      <div class="op-card">
-        <h3>Ações Imediatas (top 6)</h3>
+        <h3 style="margin-top:8px;">Ações Imediatas</h3>
         <div class="op-list">
-          ${acoes.length ? acoes.map((a, i) => `
+          ${acoes.length ? acoes.map((a,i)=>`
             <div>${i+1}. ${safe(a.desc)} — <i>${safe(a.resp)}</i> ${a.prazo ? `(prazo: ${a.prazo})` : ''}</div>
-          `).join('') : '<div>—</div>'}
+          `).join('') : '—'}
         </div>
       </div>
 
-      <div class="op-card">
-        <h3>Hipóteses & 5 Porquês</h3>
-        <div class="op-list">
-          ${causas.length ? causas.map((c, i) => `<div><b>${i+1}.</b> ${safe(c.desc)}</div>`).join('') : '<div>—</div>'}
-          <div style="margin-top:8px;"><b>5 Porquês (1ª hipótese):</b></div>
-          ${porques.length ? porques.map((p, i) => `<div>${i+1}º por quê: ${safe(p)}</div>`).join('') : '<div>—</div>'}
+      <!-- Setor 2: Ishikawa + comentários -->
+      <div class="op-card op-fishbone-card">
+        <h3>Diagrama de Ishikawa (Espinha de Peixe)</h3>
+        <div class="op-fishbone">${fishSVG}</div>
+        <div>
+          <div class="op-muted" style="margin-top:6px;">Itens que contribuíram — comentários</div>
+          <div class="op-list">${comentariosContrib}</div>
         </div>
       </div>
-    </div>
+
+      <!-- Setor 3: Hipóteses & 5 Porquês -->
+      <div class="op-card">
+        <h3 style="margin-top:2px;">5 Porquês (detalhados)</h3>
+        <div class="op-list">
+          ${porquesDetalhados.length ? porquesDetalhados.map(item => `
+            <div>
+              <div><b>Hipótese ${item.idx}:</b> ${safe(item.desc)}</div>
+              ${item.porques.length ? item.porques.map((p, i) => `<div>${i+1}º por quê: ${safe(p)}</div>`).join('') : '<div>—</div>'}
+            </div>
+          `).join('') : '—'}
+        </div>
+        <div class="op-card op-roadmap">
+          <h3>Ações Futuras</h3>
+          <div class="op-timeline">
+            ${acoesFuturasHTML}
+          </div>
+        </div>
+      </div>
+      
 
     <div class="op-footer">
       <div class="op-card">
-        <h3>Espinha de Peixe — Categorias</h3>
-        <div>${chips || '—'}</div>
+        <h3>Observações</h3>
+        <div class="op-muted">Use esta seção para observações finais, referências e evidências.</div>
       </div>
       <div class="op-card">
-        <h3>Observações</h3>
-        <div class="op-small">Use esta seção para anotações finais, referências ou links para evidências.</div>
+        <h3>Categorias destacadas</h3>
+        <div class="op-chips">${chips || '—'}</div>
       </div>
     </div>
   `;
@@ -252,30 +321,45 @@ function buildOnePage() {
 async function exportOnePagePDF(){
   buildOnePage();
   const el = document.getElementById('onepage');
-  el.classList.remove('hidden'); // show for render
+  el.classList.remove('hidden');
 
-  // Allow layout to paint
   await new Promise(r => setTimeout(r, 50));
 
   const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
   const imgData = canvas.toDataURL('image/png');
 
   const { jsPDF } = window.jspdf;
-  // Create PDF with the canvas dimensions to avoid rescaling artifacts
-  const pdf = new jsPDF({
-    orientation: 'landscape',
-    unit: 'pt',
-    format: [canvas.width, canvas.height],
-    compress: true
-  });
-
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [canvas.width, canvas.height], compress: true });
   pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
   pdf.save('RCA-OnePage.pdf');
 
   el.classList.add('hidden');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// Init
+window.addEventListener('DOMContentLoaded', () => {
+  $('#btnAddAcao').addEventListener('click', () => addAcao());
+  $('#btnAddCausa').addEventListener('click', () => addCausa());
+  $('#btnSalvar').addEventListener('click', save);
+  $('#btnLimpar').addEventListener('click', clearAll);
+  $('#btnPDF').addEventListener('click', toPDF);
+  $('#btnAddAcaoFutura')?.addEventListener('click', () => addAcaoFutura());
   const btn = document.getElementById('btnOnePage');
   if(btn){ btn.addEventListener('click', exportOnePagePDF); }
+
+  // fishbone switches
+  $all('.contrib').forEach(chk => {
+    chk.addEventListener('change', (e) => {
+      toggleBranchHighlight(e.target.dataset.target, e.target.checked);
+    });
+  });
+
+  // preencher data se vazia
+  const dataInput = $('#data');
+  if(!dataInput.value){
+    const today = new Date();
+    dataInput.value = today.toISOString().slice(0,10);
+  }
+
+  load();
 });
