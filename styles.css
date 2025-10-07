@@ -35,6 +35,7 @@ h1, h2, h3 { line-height: 1.2; }
 h1 { font-size: 28px; margin: 0; }
 h2 { font-size: 20px; margin: 0 0 14px; }
 h3 { font-size: 16px; margin: 0 0 10px; }
+h4 { font-size: 12px; margin: 0 0 10px; }
 
 /* === Layout === */
 .sidebar { position: fixed; inset: 0 auto 0 0; width: 260px; padding: 18px;
@@ -149,7 +150,7 @@ input:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(37,99,23
 .onepage.hidden { display: none !important; }
 
 .op-header { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
-.op-title { font-size: 22px; font-weight: 800; }
+.op-title { font-size: 12px; font-weight: 800; }
 .op-meta { display: grid; grid-auto-flow: column; gap: 10px; color: #334155; font-size: 12.5px; }
 .op-meta b { color: #0f172a; }
 .op-small { color: #64748b; font-size: 12px; }
@@ -220,3 +221,49 @@ option[value="concluida"] {
   #fishbone .branch.active line { stroke: #000; }
   #fishbone .branch text, #fishbone .problem { fill: #000; }
 }
+
+/* Guia (Informações) */
+.guide { display: grid; gap: 10px; }
+.guide h3 { margin: 8px 0 6px; font-size: 16px; }
+.guide p, .guide li { color: var(--text); }
+.guide ul { padding-left: 18px; display: grid; gap: 6px; }
+.guide code { background: var(--card); border: 1px solid var(--outline); padding: 2px 6px; border-radius: 6px; }
+.guide .guide-end { color: var(--muted); font-style: italic; margin-top: 4px; }
+
+/* Guia recolhível (accordion) */
+.guide-card { padding: 0; overflow: hidden; }
+.guide-card details { border-radius: 18px; }
+
+.guide-summary {
+  list-style: none; /* remove marker padrão */
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 14px 16px;
+  border-bottom: 1px solid var(--outline);
+  background: var(--surface);
+  cursor: pointer;
+}
+.guide-summary::-webkit-details-marker { display: none; } /* Safari/Chrome */
+
+.guide-icon { font-size: 18px; }
+.guide-title { font-weight: 700; }
+.guide-hint { color: var(--muted); font-size: 12px; }
+
+.guide-body { padding: 14px 16px 16px; background: linear-gradient(180deg, #ffffff, var(--card) 100%); }
+
+/* seta/chevron custom no summary */
+.guide-summary {
+  position: relative;
+}
+.guide-summary::after {
+  content: "";
+  width: 14px; height: 14px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' stroke='%2364748b' fill='none' viewBox='0 0 24 24' stroke-width='2'><path stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/></svg>") no-repeat center center / contain;
+  transform: rotate(0deg);
+  transition: transform .2s ease;
+}
+#guideDetails[open] .guide-summary::after { transform: rotate(180deg); }
+
+/* mantém o cartão padrão */
+.guide h3 { margin: 8px 0 6px; font-size: 16px; }
+.guide ul { padding-left: 18px; display: grid; gap: 6px; }
+.guide code { background: var(--card); border: 1px solid var(--outline); padding: 2px 6px; border-radius: 6px; }

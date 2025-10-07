@@ -5,6 +5,20 @@ function $all(sel, root=document){ return Array.from(root.querySelectorAll(sel))
 // Persistência
 const STORAGE_KEY = 'rca_hub_v2';
 
+// scroll suave para os links do menu
+document.querySelectorAll('.sidebar nav a[href^="#"]').forEach(a => {
+  a.addEventListener('click', (e) => {
+    const id = a.getAttribute('href');
+    const target = document.querySelector(id);
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', id);
+    }
+  });
+});
+
+
 function collectData(){
   const data = {
     info: {
@@ -47,6 +61,20 @@ function collectData(){
 })),
   };
   return data;
+}
+
+function escapeHTML(str = '') {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function nl2br(str = '') {
+  // escapa HTML e troca \n por <br>
+  return escapeHTML(str).replace(/\r?\n/g, '<br>');
 }
 
 function populateData(data){
@@ -222,6 +250,9 @@ function buildAcoesFuturasBlock(acoesFuturas = []){
       </div>
     `;
   }).join('') : `<div class="op-empty">— Sem ações futuras cadastradas —</div>`;
+
+  // ✅ faltava isto:
+  return rows;
 }
 
 // === OnePage builder (3 setores) & exporter ===
@@ -231,14 +262,50 @@ function buildOnePage() {
 
   const acoes = data.acoes.filter(a => a.desc?.trim());
   const causas = data.causas.filter(c => c.desc?.trim());
-  const contribs = data.fishbone.filter(f => !!f.contribuiu);
+  // separar itens do Ishikawa por contribuição
+  const contribs = data.fishbone.filter(f =>
+    f.contribuiu && (f.fatores || '').trim().length
+  );
+  const avaliados = data.fishbone.filter(f =>
+    !f.contribuiu && (f.fatores || '').trim().length
+  );
+
+  // helpers de linha (usa nl2br se você já adicionou anteriormente)
+  const linhasContrib = contribs.length
+  ? contribs.map(f => `
+      <div class="op-row">
+        <div class="op-col main">
+          <div class="op-title">${f.cat}</div>
+          <div class="op-meta"><span class="pill contrib">Contribuiu</span></div>
+          <div class="op-text">${f.fatores ? nl2br(f.fatores) : '—'}</div>
+        </div>
+      </div>
+    `).join('')
+  : `<div class="op-empty">— Nenhum item contribuinte informado —</div>`;
+
+  const linhasAvaliados = avaliados.length
+  ? avaliados.map(f => `
+      <div class="op-row">
+        <div class="op-col main">
+          <div class="op-title">${f.cat}</div>
+          <div class="op-meta"><span class="pill neutral">Avaliados</span></div>
+          <div class="op-text">${f.fatores ? nl2br(f.fatores) : '—'}</div>
+        </div>
+      </div>
+    `).join('')
+  : `<div class="op-empty">— Sem itens avaliados não contribuintes —</div>`;    
+
   const porquesDetalhados = causas.map((c, idx) => ({
     idx: idx + 1, desc: c.desc, porques: [c.pq1, c.pq2, c.pq3, c.pq4, c.pq5].filter(Boolean)
   }));
 
   const fishSVG = generateFishboneSVG(data.fishbone);
-  const comentariosContrib = contribs.map(f => `<div><b>${f.cat}:</b> ${safe(f.fatores)}</div>`).join('') || '—';
+  const comentariosContrib = contribs.map(f => `<div><b>${f.cat}:</b> ${f.fatores ? nl2br(f.fatores) : '—'}</div>`).join('') || '—';
   const chips = data.fishbone.map(f => `<span class="op-chip ${f.contribuiu ? 'on' : ''}">${f.cat}${f.contribuiu ? ' • contribuiu' : ''}</span>`).join('');
+  
+  
+  
+  const acoesFuturasHTML = buildAcoesFuturasBlock(data.acoesFuturas);
 
   const el = document.getElementById('onepage');
   el.innerHTML = `
@@ -261,9 +328,9 @@ function buildOnePage() {
       <div class="op-card">
         <h3>Descrição & Contexto</h3>
         <div class="op-list">
-          <div><b>Problema:</b> ${safe(data.problema.desc)}</div>
-          <div><b>Não detectado antes:</b> ${safe(data.problema.naoDetectado)}</div>
-          <div><b>Ação que agravou:</b> ${safe(data.problema.acaoAgravou)}</div>
+          <div><b>Problema:</b> ${data.problema.desc ? nl2br(data.problema.desc) : '—'}</div>
+          <div><b>Não detectado antes:</b> ${data.problema.naoDetectado ? nl2br(data.problema.naoDetectado) : '—'}</div>
+          <div><b>Ação que agravou:</b> ${data.problema.acaoAgravou ? nl2br(data.problema.acaoAgravou) : '—'}</div>
           <div><b>Reincidente:</b> ${data.problema.reincidente === 'sim' ? 'Sim' : 'Não'}</div>
           <div><b>Relatórios anteriores:</b> ${data.problema.relatorios === 'sim' ? 'Sim' : 'Não'}</div>
         </div>
@@ -279,9 +346,19 @@ function buildOnePage() {
       <div class="op-card op-fishbone-card">
         <h3>Diagrama de Ishikawa (Espinha de Peixe)</h3>
         <div class="op-fishbone">${fishSVG}</div>
-        <div>
-          <div class="op-muted" style="margin-top:6px;">Itens que contribuíram — comentários</div>
-          <div class="op-list">${comentariosContrib}</div>
+        <div class="op-subgrid">
+          <div class="op-card op-sub">
+            <h3 style="margin-top:8px;color:#f59e0b;">Itens que contribuíram</h3>
+            <div class="op-timeline">
+              ${linhasContrib}
+            </div>
+          </div>
+          <div class="op-card op-sub">
+            <h3 style="margin-top:8px;color:#16a34a;">Avaliados (não contribuíram)</h3>
+            <div class="op-timeline">
+              ${linhasAvaliados}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -303,7 +380,7 @@ function buildOnePage() {
           </div>
         </div>
       </div>
-      
+    </div>
 
     <div class="op-footer">
       <div class="op-card">

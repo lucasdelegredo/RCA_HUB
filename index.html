@@ -15,6 +15,7 @@
       <a href="#sec-acoes">⚡ Ações Imediatas</a>
       <a href="#sec-causas">🧠 Causas & 5 Porquês</a>
       <a href="#sec-espinha">🐟 Espinha de Peixe</a>
+      <a href="#sec-guia">ℹ️ Informações</a>
     </nav>
     <div class="sidebar-actions">
       <button id="btnOnePage" class="btn primary">Exportar OnePage (PDF)</button>
@@ -30,6 +31,98 @@
       <h1>Análise de Causa Raiz</h1>
       <p class="subtitle">Registre, investigue e gere o PDF da sua análise.</p>
     </header>
+
+    <section id="sec-guia" class="card guide-card">
+      <details id="guideDetails">
+        <summary class="guide-summary">
+          <span class="guide-icon">ℹ️</span>
+          <span class="guide-title">Instruções de preenchimento</span>
+          <span class="guide-hint">Clique para expandir</span>
+        </summary>
+
+        <!-- corpo do guia (pode usar seu conteúdo atual) -->
+        <article class="guide guide-body">
+          <p>Este guia explica, passo a passo, como preencher e gerar seu relatório “OnePage”.</p>
+          <section id="sec-guia" class="card">
+  <h2>Guia de Utilização do RCA Hub</h2>
+  <article class="guide">
+    <p>Este guia explica, passo a passo, como preencher e gerar seu relatório “OnePage” de Análise de Causa Raiz.</p>
+
+    <h3>1) Identificação</h3>
+    <ul>
+      <li><b>Investigador(a), Processo, Equipamento, Data, OS:</b> preencha para rastreabilidade do caso.</li>
+      <li>Dica: a <b>Data</b> é preenchida automaticamente na primeira abertura.</li>
+    </ul>
+
+    <h3>2) Descrição do Problema</h3>
+    <ul>
+      <li><b>O que ocorreu?</b> descreva fatos, local, horário e impacto.</li>
+      <li><b>Por que não foi detectado antes?</b> explique falhas de alarme, inspeção ou procedimento.</li>
+      <li><b>Alguma ação agravou?</b> detalhe se algo piorou o desvio.</li>
+      <li>Marque se é <b>reincidente</b> e se existem <b>relatórios anteriores</b>.</li>
+      <li><i>Quebras de linha</i> nos textos são preservadas no OnePage.</li>
+    </ul>
+
+    <h3>3) Ações Imediatas</h3>
+    <ul>
+      <li>Clique em <b>+ Adicionar ação</b> e preencha <b>Descrição, Responsável e Prazo</b>.</li>
+      <li>Use <b>Remover</b> para excluir itens.</li>
+    </ul>
+
+    <h3>4) Causas & 5 Porquês</h3>
+    <ul>
+      <li>Em <b>Possíveis Causas</b>, registre hipóteses. Cada hipótese tem campos dos <b>5 Porquês</b>.</li>
+      <li>No OnePage, as hipóteses e os porquês aparecem no <b>Setor 3</b>.</li>
+    </ul>
+
+    <h3>5) Espinha de Peixe (Ishikawa)</h3>
+    <ul>
+      <li>Para cada categoria (<b>Método</b>, <b>Máquina</b>, <b>Mão de Obra</b>, <b>Material</b>, <b>Medida</b>, <b>Meio Ambiente</b>):</li>
+      <li>• Liste os fatores no textarea e ative <b>Contribuiu</b> se o item participou da falha.</li>
+      <li>• No OnePage, o diagrama destaca os ramos que contribuíram e, abaixo, separa
+        <b>Itens que contribuíram</b> de <b>Avaliados (não contribuíram)</b>, preservando as quebras de linha.</li>
+    </ul>
+
+    <h3>6) Ações Futuras</h3>
+    <ul>
+      <li>Clique em <b>+ Adicionar ação futura</b> e preencha <b>Descrição, Responsável, Prazo, Status</b> (Pendente/Concluída).</li>
+      <li>No OnePage, as ações futuras surgem em um bloco próprio com <b>chips de status</b>.</li>
+    </ul>
+
+    <h3>7) Salvar, Limpar e Exportar</h3>
+    <ul>
+      <li><b>Salvar</b> grava localmente no navegador (LocalStorage).</li>
+      <li><b>Imprimir/Salvar PDF</b> cria relatório multi-página (modo impressão do navegador).</li>
+      <li><b>Exportar OnePage (PDF)</b> gera uma única lâmina (A4 paisagem) com os 3 setores + rodapé.</li>
+    </ul>
+
+    <h3>8) Dicas de Preenchimento</h3>
+    <ul>
+      <li>Seja objetivo e use <b>pontos</b> nas causas e fatores do Ishikawa.</li>
+      <li>Registre <b>responsáveis e prazos</b> em todas as ações para facilitar o acompanhamento.</li>
+      <li>Use o campo “Ação que agravou” para evitar recorrência do mesmo erro no futuro.</li>
+    </ul>
+
+    <h3>9) Erros Comuns & Soluções</h3>
+    <ul>
+      <li><b>PDF não gera:</b> confirme que as bibliotecas <code>html2canvas</code> e <code>jsPDF</code> estão carregadas.</li>
+      <li><b>Campos não aparecem no OnePage:</b> verifique se foram preenchidos e se você clicou em <b>Exportar OnePage (PDF)</b> após preencher.</li>
+      <li><b>Dados sumiram:</b> use <b>Salvar</b> sempre que fizer alterações importantes. O <b>Limpar</b> apaga tudo.</li>
+    </ul>
+
+    <h3>10) Atalhos & Boas Práticas</h3>
+    <ul>
+      <li>Use <b>Ctrl/Cmd + F</b> para localizar termos no navegador.</li>
+      <li>Insira <b>links</b> para evidências (docs, fotos) nas observações e no corpo dos campos.</li>
+      <li>Revise o OnePage antes de exportar: verifique títulos, datas e status.</li>
+    </ul>
+
+    <p class="guide-end">Pronto! Seu RCA estará padronizado, completo e pronto para distribuição.</p>
+  </article>
+</section>
+        </article>
+      </details>
+    </section>
 
     <!-- Identificação -->
     <section id="sec-info" class="card">
@@ -291,6 +384,8 @@
 </section>
 
     <section id="onepage" class="onepage hidden" aria-hidden="true"></section>
+
+
     <footer class="footer">
       <small>Gerado por RCA Hub — use o botão "Imprimir/Salvar PDF" para gerar seu documento.</small>
     </footer>
